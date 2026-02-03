@@ -1,0 +1,28 @@
+# Node modules locales (ya se instalan en deps)
+node_modules
+
+# Next.js build artifacts
+.next/cache
+.next/trace
+
+# Logs
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+*.log
+
+# Archivos de entorno
+.env
+.env.local
+.env.*.local
+
+# Sistema de control de versiones
+.git
+.gitignore
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.yml
