@@ -7,7 +7,7 @@ export interface Task {
   createdAt: string;
 }
 
-class TaskStore {
+export class TaskStore {
   private tasks: Map<string, Task> = new Map();
 
   constructor() {
