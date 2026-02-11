@@ -1,0 +1,99 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches:
+      - develop
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+
+    steps:
+      # Checkout
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Setup Node
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      # Lint
+      - name: ESLint
+        run: npm run lint
+
+      # Format check
+      - name: Prettier check
+        run: npm run format:check
+
+      # Unit tests
+      - name: Run Jest tests
+        run: npm run test
+
+      # Gitleaks
+      #- name: Gitleaks scan
+      #  uses: gitleaks/gitleaks-action@v2
+      #  with:
+      #    fail: true
+
+      # 8️⃣ Trivy FS scan (filesystem vulnerabilities + secrets)
+      - name: Trivy FS scan (SARIF)
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+          scanners: 'vuln,secret'
+          cache: true
+          exit-code: 1
+
+      # 9️⃣ Optional: Console output of Trivy
+      - name: Trivy FS scan (console)
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+          skip-setup-trivy: true
+          exit-code: 1
+
+      # 🔟 Upload Trivy SARIF to GitHub Security
+      - name: Upload Trivy SARIF to GitHub
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      # CodeQL
+      #- name: Initialize CodeQL
+      #  uses: github/codeql-action/init@v3
+      #  with:
+      #    languages: javascript
+#
+      #- name: Autobuild
+      #  uses: github/codeql-action/autobuild@v3
+#
+      #- name: Analyze
+      #  uses: github/codeql-action/analyze@v3
+
+      # SonarCloud     
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
