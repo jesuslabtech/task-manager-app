@@ -85,14 +85,14 @@ jobs:
       #  uses: github/codeql-action/init@v3
       #  with:
       #    languages: javascript
-#
+      #
       #- name: Autobuild
       #  uses: github/codeql-action/autobuild@v3
-#
+      #
       #- name: Analyze
       #  uses: github/codeql-action/analyze@v3
 
-      # SonarCloud     
+      # SonarCloud
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v6
         env:

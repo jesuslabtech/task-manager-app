@@ -5,7 +5,7 @@ import { metrics } from '@/lib/metrics';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const startTime = Date.now();
   try {
@@ -18,10 +18,7 @@ export async function DELETE(
     metrics.recordRequestDuration(duration);
 
     if (!deleted) {
-      return NextResponse.json(
-        { error: 'Task not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
 
     metrics.incrementTaskOperation('delete');
@@ -30,14 +27,14 @@ export async function DELETE(
     logger.error('Error deleting task', { error });
     return NextResponse.json(
       { error: 'Failed to delete task' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const startTime = Date.now();
   try {
@@ -53,7 +50,7 @@ export async function PATCH(
       if (typeof title !== 'string' || title.trim().length === 0) {
         return NextResponse.json(
           { error: 'Title must be a non-empty string' },
-          { status: 400 }
+          { status: 400 },
         );
       }
       updates.title = title.trim();
@@ -62,7 +59,7 @@ export async function PATCH(
       if (typeof completed !== 'boolean') {
         return NextResponse.json(
           { error: 'Completed must be a boolean' },
-          { status: 400 }
+          { status: 400 },
         );
       }
       updates.completed = completed;
@@ -73,10 +70,7 @@ export async function PATCH(
     metrics.recordRequestDuration(duration);
 
     if (!task) {
-      return NextResponse.json(
-        { error: 'Task not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
 
     return NextResponse.json({ task }, { status: 200 });
@@ -84,7 +78,7 @@ export async function PATCH(
     logger.error('Error updating task', { error });
     return NextResponse.json(
       { error: 'Failed to update task' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

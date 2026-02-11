@@ -40,7 +40,7 @@ describe('TaskStore', () => {
       const tasks = taskStore.getAll();
 
       expect(tasks).toHaveLength(3);
-      expect(tasks.map(t => t.title)).toEqual(['Task 1', 'Task 2', 'Task 3']);
+      expect(tasks.map((t) => t.title)).toEqual(['Task 1', 'Task 2', 'Task 3']);
     });
   });
 

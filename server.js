@@ -34,7 +34,7 @@ app.prepare().then(() => {
         port,
         hostname,
         env: process.env.NODE_ENV,
-      })
+      }),
     );
   });
 
@@ -46,7 +46,7 @@ app.prepare().then(() => {
         level: 'INFO',
         app: process.env.APP_NAME || 'task-manager',
         message: `Received ${signal}, starting graceful shutdown`,
-      })
+      }),
     );
 
     server.close(() => {
@@ -56,7 +56,7 @@ app.prepare().then(() => {
           level: 'INFO',
           app: process.env.APP_NAME || 'task-manager',
           message: 'Server closed',
-        })
+        }),
       );
       process.exit(0);
     });
@@ -69,7 +69,7 @@ app.prepare().then(() => {
           level: 'ERROR',
           app: process.env.APP_NAME || 'task-manager',
           message: 'Forced shutdown after timeout',
-        })
+        }),
       );
       process.exit(1);
     }, 10000);
