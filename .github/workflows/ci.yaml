@@ -84,6 +84,7 @@ jobs:
 
     # ------------------------------
 
+  # ------------------------------
   # 2️⃣ Docker Build & Upload Job
   # ------------------------------
   upload-image:
@@ -92,7 +93,7 @@ jobs:
       security-events: write
       actions: read
     runs-on: ubuntu-24.04
-    needs: validation # espera a que validation pase
+    needs: validation # Needs to wait for validation job to finish successfully
     timeout-minutes: 10
     steps:
       - name: Info
@@ -134,6 +135,19 @@ jobs:
         run: |
           echo "Docker image version upload to DockerHub: $DOCKERHUB_REPO:${{ steps.get_version.outputs.version }}"
 
+  # --------------------------------------      
+  # 3️⃣ Image Vulnerability Scanning Job
+  # --------------------------------------
+  scan-image-vulnerabilities:
+    upload-image:
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    runs-on: ubuntu-24.04
+    needs: upload-image # Needs to wait for upload-image job to finish successfully
+    timeout-minutes: 10
+    steps:
       - name: Scan Docker image and generate SBOM
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
         with:
@@ -144,6 +158,12 @@ jobs:
           sbom: spdx-json
           output: trivy-sbom.json
           exit-code: 1 # ❌ pipeline fails if finds HIGH/CRITICAL vulnerabilities, but SBOM is generated regardless
+      
+      - name: Display the scan results
+        run: |
+          echo "Scan results for image ${{ env.DOCKERHUB_REPO }}:${{ steps.get_version.outputs.version }}"
+          cat trivy-sbom.json
+          echo "There are vulnerabilities (HIGH or CRITICAL) in the image. Please check the SBOM for details."
 
       # Upload SBOM artifact to the artifacts section
       - name: Upload SBOM artifact
