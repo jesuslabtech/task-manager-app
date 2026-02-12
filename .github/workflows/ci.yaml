@@ -6,11 +6,6 @@ on:
       - develop
       - main
 
-permissions:
-  contents: read
-  security-events: write
-  actions: read
-
 env:
   APP_NAME: task-manager
   DOCKERHUB_REPO: jlabtech/task-manager
@@ -21,6 +16,11 @@ jobs:
   # 1️⃣ Validation Job
   # ------------------------------
   validation:
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -85,6 +85,10 @@ jobs:
   # 2️⃣ Docker Build & Upload Job
   # ------------------------------
   upload-image:
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
     runs-on: ubuntu-24.04
     needs: validation # espera a que validation pase
     timeout-minutes: 10

@@ -5,13 +5,13 @@ on:
     branches:
       - develop
 
-permissions:
-  contents: read
-  security-events: write
-  actions: read
-
 jobs:
   validate:
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
     runs-on: ubuntu-24.04
 
     steps:
