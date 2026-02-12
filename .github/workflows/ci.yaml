@@ -1,0 +1,144 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+
+env:
+  APP_NAME: task-manager
+  DOCKERHUB_REPO: jlabtech/task-manager
+  DOCKER_IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  # ------------------------------
+  # 1️⃣ Validation Job
+  # ------------------------------
+  validation:
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps --ignore-scripts
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Prettier check
+        run: npm run format:check
+
+      - name: Run Jest tests
+        run: npm run test:coverage
+
+      - name: Trivy FS scan (SARIF)
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+          scanners: 'vuln,secret'
+          cache: true
+          exit-code: 1
+
+      - name: Trivy FS scan (console)
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+          skip-setup-trivy: true
+          exit-code: 1
+
+      - name: Upload Trivy SARIF to GitHub
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602
+        with:
+          fetch-depth: 0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+    # ------------------------------
+
+  # 2️⃣ Docker Build & Upload Job
+  # ------------------------------
+  upload-image:
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    runs-on: ubuntu-24.04
+    needs: validation # espera a que validation pase
+    timeout-minutes: 10
+    steps:
+      - name: Info
+        run: echo "Starting Docker build and upload process..."
+      ## Checkout código
+      #- name: Checkout code
+      #  uses: actions/checkout@v4
+#
+## Leer versión semántica del RELEASE.md
+#- name: Read version from RELEASE.md
+#  id: get_version
+#  run: |
+#    VERSION=$(cat RELEASE.md | tr -d ' \n')
+#    echo "version=$VERSION" >> $GITHUB_OUTPUT
+#
+## Build Docker image con dual tags
+#- name: Build Docker image
+#  run: |
+#    echo "Building Docker image with tags: ${{ steps.get_version.outputs.version }} and $DOCKER_IMAGE_TAG"
+#    docker build \
+#      -t $DOCKERHUB_REPO:${{ steps.get_version.outputs.version }} \
+#      -t $DOCKERHUB_REPO:$DOCKER_IMAGE_TAG .
+#
+## 5️⃣ DockerHub login
+#- name: DockerHub Login
+#  uses: docker/login-action@v2
+#  with:
+#    username: ${{ secrets.DOCKERHUB_USERNAME }}
+#    password: ${{ secrets.DOCKERHUB_TOKEN }}
+#
+## 6️⃣ Push Docker image with both tags
+#- name: Push Docker image
+#  run: |
+#    docker push $DOCKERHUB_REPO:${{ steps.get_version.outputs.version }}
+#    docker push $DOCKERHUB_REPO:$DOCKER_IMAGE_TAG
+#
+## 7️⃣ Optional: Generate SBOM (Trivy)
+#- name: Generate SBOM (SPDX JSON)
+#  uses: aquasecurity/trivy-action@v2
+#  with:
+#    image-ref: $DOCKERHUB_REPO:$DOCKER_IMAGE_TAG
+#    sbom: spdx-json
+#    output: trivy-sbom.json
+#
+#- name: Upload SBOM artifact
+#  uses: actions/upload-artifact@v3
+#  with:
+#    name: sbom
+#    path: trivy-sbom.json
