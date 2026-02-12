@@ -186,7 +186,7 @@ jobs:
 
       # 4️⃣ Upload SBOM artifact
       - name: Upload SBOM artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: sbom
           path: ${{ steps.scan.outputs.sbom_file }}
