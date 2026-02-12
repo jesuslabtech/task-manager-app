@@ -17,7 +17,6 @@ env:
   DOCKER_IMAGE_TAG: ${{ github.sha }}
 
 jobs:
-
   # ------------------------------
   # 1️⃣ Validation Job
   # ------------------------------
@@ -82,13 +81,12 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
     # ------------------------------
-  
-  
+
   # 2️⃣ Docker Build & Upload Job
   # ------------------------------
   upload-image:
     runs-on: ubuntu-24.04
-    needs: validation  # espera a que validation pase
+    needs: validation # espera a que validation pase
     timeout-minutes: 10
     steps:
       # Checkout código
@@ -136,4 +134,3 @@ jobs:
         with:
           name: sbom
           path: trivy-sbom.json
-
