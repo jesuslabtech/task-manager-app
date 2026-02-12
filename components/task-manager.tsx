@@ -1,7 +1,5 @@
 'use client';
 
-import React from 'react';
-
 import { useEffect, useState } from 'react';
 import {
   Card,
@@ -48,7 +46,7 @@ export function TaskManager() {
     fetchTasks();
   }, []);
 
-  const handleCreateTask = async (e: React.FormEvent) => {
+  const handleCreateTask = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
 
@@ -108,6 +106,55 @@ export function TaskManager() {
     }
   };
 
+  const renderTaskList = () => {
+    if (loading) {
+      return (
+        <div className="flex justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      );
+    }
+
+    if (tasks.length === 0) {
+      return (
+        <div className="text-center py-8 text-muted-foreground">
+          No tasks yet. Create your first task above!
+        </div>
+      );
+    }
+
+    return tasks.map((task) => (
+      <div
+        key={task.id}
+        className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+      >
+        <Checkbox
+          checked={task.completed}
+          onCheckedChange={(checked) =>
+            handleToggleComplete(task.id, checked as boolean)
+          }
+        />
+        <span
+          className={`flex-1 ${
+            task.completed
+              ? 'line-through text-muted-foreground'
+              : 'text-foreground'
+          }`}
+        >
+          {task.title}
+        </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => handleDeleteTask(task.id)}
+          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    ));
+  };
+
   return (
     <div className="container max-w-2xl mx-auto py-8 px-4">
       <Card>
@@ -139,46 +186,7 @@ export function TaskManager() {
 
           {/* Task List */}
           <div className="space-y-2">
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-            ) : tasks.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No tasks yet. Create your first task above!
-              </div>
-            ) : (
-              tasks.map((task) => (
-                <div
-                  key={task.id}
-                  className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-                >
-                  <Checkbox
-                    checked={task.completed}
-                    onCheckedChange={(checked) =>
-                      handleToggleComplete(task.id, checked as boolean)
-                    }
-                  />
-                  <span
-                    className={`flex-1 ${
-                      task.completed
-                        ? 'line-through text-muted-foreground'
-                        : 'text-foreground'
-                    }`}
-                  >
-                    {task.title}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDeleteTask(task.id)}
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))
-            )}
+            {renderTaskList()}
           </div>
 
           {/* Stats */}
