@@ -77,6 +77,11 @@ jobs:
 
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602
+        with:
+          args: >
+            -Dsonar.javascript.node.executable=$(which node)
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.nodejs.executable=$(which node)
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
