@@ -128,13 +128,17 @@ jobs:
       - name: Push Docker image
         run: |
           docker push $DOCKERHUB_REPO:${{ steps.get_version.outputs.version }}
-          docker push $DOCKERHUB_REPO:$DOCKER_IMAGE_TAG
+
+      # Visualize pushed image
+      - name: List the pushed Docker image
+        run: |
+          echo "Docker image version upload to DockerHub: $DOCKERHUB_REPO:${{ steps.get_version.outputs.version }}"
 
       # Generate SBOM (Trivy)
       - name: Generate SBOM (SPDX JSON)
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
         with:
-          image-ref: $DOCKERHUB_REPO:$DOCKER_IMAGE_TAG
+          image-ref: $DOCKERHUB_REPO:${{ steps.get_version.outputs.version }}
           sbom: spdx-json
           output: trivy-sbom.json
 
