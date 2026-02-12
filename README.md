@@ -5,6 +5,7 @@ A production-ready fullstack task management application built with Next.js, fea
 ## Features
 
 ### Application Features
+
 - ✅ List all tasks
 - ✅ Add new tasks
 - ✅ Mark tasks as complete/incomplete
@@ -12,6 +13,7 @@ A production-ready fullstack task management application built with Next.js, fea
 - ✅ Modern, responsive UI with shadcn/ui components
 
 ### Operational Features
+
 - 🏥 Health check endpoint (`/health`)
 - 🔄 Readiness probe endpoint (`/ready`)
 - 📊 Prometheus metrics endpoint (`/metrics`)
@@ -22,7 +24,7 @@ A production-ready fullstack task management application built with Next.js, fea
 
 ## Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - npm or yarn
 
 ## Local Development
@@ -125,39 +127,39 @@ spec:
         app: task-manager
     spec:
       containers:
-      - name: task-manager
-        image: task-manager:latest
-        ports:
-        - containerPort: 3000
-        env:
-        - name: APP_NAME
-          value: "task-manager"
-        - name: LOG_LEVEL
-          value: "info"
-        - name: JWT_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: task-manager-secrets
-              key: jwt-secret
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 3000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 3000
-          initialDelaySeconds: 5
-          periodSeconds: 5
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
+        - name: task-manager
+          image: task-manager:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: APP_NAME
+              value: 'task-manager'
+            - name: LOG_LEVEL
+              value: 'info'
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: task-manager-secrets
+                  key: jwt-secret
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: '256Mi'
+              cpu: '250m'
+            limits:
+              memory: '512Mi'
+              cpu: '500m'
 ---
 apiVersion: v1
 kind: Service
@@ -167,8 +169,8 @@ spec:
   selector:
     app: task-manager
   ports:
-  - port: 80
-    targetPort: 3000
+    - port: 80
+      targetPort: 3000
   type: LoadBalancer
 ```
 
@@ -206,22 +208,22 @@ kubectl apply -f deployment.yaml
 
 ### Required Configuration
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `APP_NAME` | Application name for logging | `task-manager` |
-| `LOG_LEVEL` | Logging level (error, warn, info, debug) | `info` |
+| Variable    | Description                              | Default        |
+| ----------- | ---------------------------------------- | -------------- |
+| `APP_NAME`  | Application name for logging             | `task-manager` |
+| `LOG_LEVEL` | Logging level (error, warn, info, debug) | `info`         |
 
 ### Required Secrets
 
-| Variable | Description | Default |
-|----------|-------------|---------|
+| Variable     | Description                | Default                 |
+| ------------ | -------------------------- | ----------------------- |
 | `JWT_SECRET` | Secret key for JWT signing | (none - warning logged) |
 
 ### Optional
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PORT` | Server port | `3000` |
+| Variable   | Description                           | Default      |
+| ---------- | ------------------------------------- | ------------ |
+| `PORT`     | Server port                           | `3000`       |
 | `NODE_ENV` | Environment (development, production) | `production` |
 
 ## Logging

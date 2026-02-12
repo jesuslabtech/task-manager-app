@@ -10,7 +10,9 @@
     "start": "NODE_ENV=production node server.js",
     "start:next": "next start",
     "format": "prettier --write .",
-    "test": "jest"
+    "format:check": "prettier --check .",
+    "test": "jest",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

@@ -26,7 +26,8 @@ class MetricsCollector {
   getPrometheusMetrics(taskCount: number): string {
     const avgDuration =
       this.requestDurations.length > 0
-        ? this.requestDurations.reduce((a, b) => a + b, 0) / this.requestDurations.length
+        ? this.requestDurations.reduce((a, b) => a + b, 0) /
+          this.requestDurations.length
         : 0;
 
     return `# HELP http_requests_total The total number of HTTP requests

@@ -15,7 +15,7 @@ export async function GET() {
         timestamp: new Date().toISOString(),
         message: 'Required configuration missing',
       },
-      { status: 503 }
+      { status: 503 },
     );
   }
 
