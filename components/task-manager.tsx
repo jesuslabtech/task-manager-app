@@ -185,9 +185,7 @@ export function TaskManager() {
           </form>
 
           {/* Task List */}
-          <div className="space-y-2">
-            {renderTaskList()}
-          </div>
+          <div className="space-y-2">{renderTaskList()}</div>
 
           {/* Stats */}
           {tasks.length > 0 && (
