@@ -14,7 +14,7 @@ const customJestConfig = {
   collectCoverage: true,
   collectCoverageFrom: [
     'lib/**/*.ts',
-    '!lib/logger.ts',  // <-- We exclude logger
+    '!lib/logger.ts', // <-- We exclude logger
   ],
   coverageDirectory: '<rootDir>/coverage',
   coverageReporters: ['lcov', 'text'],
