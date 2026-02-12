@@ -34,7 +34,10 @@ export class TaskStore {
     return task;
   }
 
-  update(id: string, updates: Partial<Omit<Task, 'id' | 'createdAt'>>): Task | null {
+  update(
+    id: string,
+    updates: Partial<Omit<Task, 'id' | 'createdAt'>>,
+  ): Task | null {
     const task = this.tasks.get(id);
     if (!task) {
       logger.warn('Task not found for update', { taskId: id });

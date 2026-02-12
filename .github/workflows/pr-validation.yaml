@@ -39,7 +39,7 @@ jobs:
 
       # Unit tests
       - name: Run Jest tests
-        run: npm run test
+        run: npm run test:coverage
 
       # Gitleaks
       #- name: Gitleaks scan
@@ -49,7 +49,7 @@ jobs:
 
       # 8️⃣ Trivy FS scan (filesystem vulnerabilities + secrets)
       - name: Trivy FS scan (SARIF)
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -63,7 +63,7 @@ jobs:
 
       # 9️⃣ Optional: Console output of Trivy
       - name: Trivy FS scan (console)
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -85,14 +85,14 @@ jobs:
       #  uses: github/codeql-action/init@v3
       #  with:
       #    languages: javascript
-#
+      #
       #- name: Autobuild
       #  uses: github/codeql-action/autobuild@v3
-#
+      #
       #- name: Analyze
       #  uses: github/codeql-action/analyze@v3
 
-      # SonarCloud     
+      # SonarCloud
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v6
         env:

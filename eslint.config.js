@@ -20,7 +20,7 @@ export default [
       'no-unused-vars': 'warn',
       'no-var': 'warn',
       'prefer-const': 'warn',
-      'eqeqeq': ['warn', 'always'],
+      eqeqeq: ['warn', 'always'],
     },
   },
   {
@@ -40,7 +40,7 @@ export default [
       'no-unused-vars': 'warn',
       'no-var': 'warn',
       'prefer-const': 'warn',
-      'eqeqeq': ['warn', 'always'],
+      eqeqeq: ['warn', 'always'],
     },
   },
 ];

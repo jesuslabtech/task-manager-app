@@ -19,7 +19,7 @@ export async function GET() {
     logger.error('Error fetching tasks', { error });
     return NextResponse.json(
       { error: 'Failed to fetch tasks' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     if (!title || typeof title !== 'string' || title.trim().length === 0) {
       return NextResponse.json(
         { error: 'Title is required and must be a non-empty string' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     logger.error('Error creating task', { error });
     return NextResponse.json(
       { error: 'Failed to create task' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
