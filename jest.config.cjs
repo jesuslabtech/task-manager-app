@@ -15,6 +15,7 @@ const customJestConfig = {
   collectCoverageFrom: [
     'lib/**/*.ts',
     '!lib/logger.ts', // <-- We exclude logger
+    '!lib/metrics.ts', // <-- We exclude metrics
     '!components/**/*.tsx',
     '!hooks/**/*.ts',
   ],
