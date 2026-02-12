@@ -1,5 +1,9 @@
 import { metrics } from '../lib/metrics';
 
+beforeEach(() => {
+  metrics.reset();
+});
+
 describe('MetricsCollector', () => {
   beforeEach(() => {
     // Reset metrics by creating a new instance
