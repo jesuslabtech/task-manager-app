@@ -77,6 +77,9 @@ jobs:
           sarif_file: 'trivy-results.sarif'
 
       - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
     # ------------------------------
   
@@ -88,31 +91,24 @@ jobs:
     needs: validation  # espera a que validation pase
     timeout-minutes: 10
     steps:
-      # 1️⃣ Checkout código
+      # Checkout código
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2️⃣ Setup Node.js
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22.20.0
-          cache: 'npm'
-
-      # 3️⃣ Leer versión semántica del RELEASE.md
+      # Leer versión semántica del RELEASE.md
       - name: Read version from RELEASE.md
         id: get_version
         run: |
           VERSION=$(cat RELEASE.md | tr -d ' \n')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      # 4️⃣ Build Docker image con dual tags
+      # Build Docker image con dual tags
       - name: Build Docker image
         run: |
           echo "Building Docker image with tags: ${{ steps.get_version.outputs.version }} and $DOCKER_IMAGE_TAG"
           docker build \
-            -t yourdockerhubusername/task-manager:${{ steps.get_version.outputs.version }} \
-            -t yourdockerhubusername/task-manager:$DOCKER_IMAGE_TAG .
+            -t $DOCKERHUB_REPO:${{ steps.get_version.outputs.version }} \
+            -t $DOCKERHUB_REPO:$DOCKER_IMAGE_TAG .
 
       # 5️⃣ DockerHub login
       - name: DockerHub Login
