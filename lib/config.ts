@@ -12,7 +12,7 @@ function validateConfig(): Config {
     appName: process.env.APP_NAME || 'task-manager',
     logLevel: process.env.LOG_LEVEL || 'info',
     jwtSecret: process.env.JWT_SECRET || '',
-    port: parseInt(process.env.PORT || '3000', 10),
+    port: Number.parseInt(process.env.PORT || '3000', 10),
   };
 
   // Validate required secrets

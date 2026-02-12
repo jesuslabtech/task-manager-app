@@ -23,6 +23,17 @@ class MetricsCollector {
     this.taskOperations[operation]++;
   }
 
+  /** 🔑 CLAVE PARA TESTS */
+  reset(): void {
+    this.requestCount = 0;
+    this.requestDurations = [];
+    this.taskOperations = {
+      create: 0,
+      delete: 0,
+      list: 0,
+    };
+  }
+
   getPrometheusMetrics(taskCount: number): string {
     const avgDuration =
       this.requestDurations.length > 0
