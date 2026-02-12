@@ -138,7 +138,7 @@ jobs:
       - name: Generate SBOM (SPDX JSON)
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
         with:
-          image-ref: $DOCKERHUB_REPO:${{ steps.get_version.outputs.version }}
+          image-ref: ${{ env.DOCKERHUB_REPO }}:${{ steps.get_version.outputs.version }}
           sbom: spdx-json
           output: trivy-sbom.json
 
