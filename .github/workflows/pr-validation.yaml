@@ -39,7 +39,7 @@ jobs:
 
       # Unit tests
       - name: Run Jest tests
-        run: npm run test
+        run: npm run test:coverage
 
       # Gitleaks
       #- name: Gitleaks scan
