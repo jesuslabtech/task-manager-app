@@ -134,13 +134,16 @@ jobs:
         run: |
           echo "Docker image version upload to DockerHub: $DOCKERHUB_REPO:${{ steps.get_version.outputs.version }}"
 
-      # Generate SBOM (Trivy)
-      - name: Generate SBOM (SPDX JSON)
+      - name: Scan Docker image and generate SBOM
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
         with:
           image-ref: ${{ env.DOCKERHUB_REPO }}:${{ steps.get_version.outputs.version }}
+          format: table
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
           sbom: spdx-json
           output: trivy-sbom.json
+          exit-code: 1 # ❌ pipeline fails if finds HIGH/CRITICAL vulnerabilities, but SBOM is generated regardless
 
       # Upload SBOM artifact to the artifacts section
       - name: Upload SBOM artifact
