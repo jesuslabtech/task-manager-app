@@ -82,12 +82,16 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   # ------------------------------
-  # 2️⃣ Docker Build Job
+  # 2️⃣ Build, Scan & Push Docker Image (Unique job to ensure artifacts reus, like docker image)
   # ------------------------------
-  build-image:
+  build-scan-push:
     runs-on: ubuntu-24.04
     needs: validation
-    timeout-minutes: 10
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
     outputs:
       image_version: ${{ steps.get_version.outputs.version }}
     steps:
@@ -111,19 +115,7 @@ jobs:
             -t $DOCKERHUB_REPO:${{ steps.get_version.outputs.version }} \
             -t $DOCKERHUB_REPO:$DOCKER_IMAGE_TAG .
 
-  # ------------------------------
-  # 3️⃣ Scan Local Docker Image
-  # ------------------------------
-  scan-image-vulnerabilities:
-    runs-on: ubuntu-24.04
-    needs: build-image
-    timeout-minutes: 15
-    permissions:
-      contents: read
-      security-events: write
-      actions: read
-    steps:
-      - name: Generate dynamic filenames with timestamp
+      - name: Generate dynamic filenames for Trivy scan
         id: filenames
         run: |
           TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
@@ -138,8 +130,7 @@ jobs:
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           output: ${{ steps.filenames.outputs.scan_file }}
-          cache: false # 🔥 Force fresh scan on local image
-          skip-setup-trivy: false
+          cache: false
 
       - name: Generate SBOM (SPDX JSON)
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
@@ -148,7 +139,6 @@ jobs:
           format: spdx-json
           output: ${{ steps.filenames.outputs.sbom_file }}
           cache: false
-          skip-setup-trivy: false
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -174,18 +164,6 @@ jobs:
           fi
         shell: bash
 
-  # ------------------------------
-  # 4️⃣ Docker Push Job
-  # ------------------------------
-  push-image:
-    runs-on: ubuntu-24.04
-    needs: scan-image-vulnerabilities
-    timeout-minutes: 10
-    permissions:
-      contents: read
-      security-events: write
-      actions: read
-    steps:
       - name: DockerHub Login
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
         with:
@@ -195,11 +173,14 @@ jobs:
       - name: Push Docker image
         run: |
           echo "Pushing Docker image tags:"
-          echo " - $DOCKERHUB_REPO:${{ needs.build-image.outputs.image_version }}"
+          echo " - $DOCKERHUB_REPO:${{ steps.get_version.outputs.version }}"
           echo " - $DOCKERHUB_REPO:$DOCKER_IMAGE_TAG"
 
-          docker push $DOCKERHUB_REPO:${{ needs.build-image.outputs.image_version }}
+          # First the SHA
           docker push $DOCKERHUB_REPO:$DOCKER_IMAGE_TAG
+          # Then, the semantic version tag
+          docker tag $DOCKERHUB_REPO:$DOCKER_IMAGE_TAG $DOCKERHUB_REPO:${{ steps.get_version.outputs.version }}
+          docker push $DOCKERHUB_REPO:${{ steps.get_version.outputs.version }}
 
   # --------------------------------------
   # 4️⃣ Update GitOps Repository (Production - main for now)
