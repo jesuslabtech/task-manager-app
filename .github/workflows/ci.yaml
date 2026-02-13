@@ -112,6 +112,7 @@ jobs:
           echo " - $DOCKERHUB_REPO:$DOCKER_IMAGE_TAG"
 
           docker build \
+            --no-cache \
             -t $DOCKERHUB_REPO:${{ steps.get_version.outputs.version }} \
             -t $DOCKERHUB_REPO:$DOCKER_IMAGE_TAG .
 
