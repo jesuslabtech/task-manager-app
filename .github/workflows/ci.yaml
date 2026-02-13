@@ -84,6 +84,7 @@ jobs:
 
     # ------------------------------
 
+  # ------------------------------
   # 2️⃣ Docker Build & Upload Job
   # ------------------------------
   upload-image:
@@ -92,53 +93,136 @@ jobs:
       security-events: write
       actions: read
     runs-on: ubuntu-24.04
-    needs: validation # espera a que validation pase
+    needs: validation
     timeout-minutes: 10
+
+    # 🔥 Job Output (important!)
+    # This exposes the image version to downstream jobs
+    outputs:
+      image_version: ${{ steps.get_version.outputs.version }}
+
     steps:
+      # 1️⃣ Informational log
       - name: Info
         run: echo "Starting Docker build and upload process..."
-      ## Checkout código
-      #- name: Checkout code
-      #  uses: actions/checkout@v4
-#
-## Leer versión semántica del RELEASE.md
-#- name: Read version from RELEASE.md
-#  id: get_version
-#  run: |
-#    VERSION=$(cat RELEASE.md | tr -d ' \n')
-#    echo "version=$VERSION" >> $GITHUB_OUTPUT
-#
-## Build Docker image con dual tags
-#- name: Build Docker image
-#  run: |
-#    echo "Building Docker image with tags: ${{ steps.get_version.outputs.version }} and $DOCKER_IMAGE_TAG"
-#    docker build \
-#      -t $DOCKERHUB_REPO:${{ steps.get_version.outputs.version }} \
-#      -t $DOCKERHUB_REPO:$DOCKER_IMAGE_TAG .
-#
-## 5️⃣ DockerHub login
-#- name: DockerHub Login
-#  uses: docker/login-action@v2
-#  with:
-#    username: ${{ secrets.DOCKERHUB_USERNAME }}
-#    password: ${{ secrets.DOCKERHUB_TOKEN }}
-#
-## 6️⃣ Push Docker image with both tags
-#- name: Push Docker image
-#  run: |
-#    docker push $DOCKERHUB_REPO:${{ steps.get_version.outputs.version }}
-#    docker push $DOCKERHUB_REPO:$DOCKER_IMAGE_TAG
-#
-## 7️⃣ Optional: Generate SBOM (Trivy)
-#- name: Generate SBOM (SPDX JSON)
-#  uses: aquasecurity/trivy-action@v2
-#  with:
-#    image-ref: $DOCKERHUB_REPO:$DOCKER_IMAGE_TAG
-#    sbom: spdx-json
-#    output: trivy-sbom.json
-#
-#- name: Upload SBOM artifact
-#  uses: actions/upload-artifact@v3
-#  with:
-#    name: sbom
-#    path: trivy-sbom.json
+
+      # 2️⃣ Checkout repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 3️⃣ Read semantic version from RELEASE.md
+      # This version will be reused by other jobs (scan, deploy, etc.)
+      - name: Read version from RELEASE.md
+        id: get_version
+        run: |
+          VERSION=$(cat RELEASE.md | tr -d ' \n')
+          echo "Detected version: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      # 4️⃣ Build Docker image with dual tags (semantic + commit SHA)
+      - name: Build Docker image
+        run: |
+          echo "Building Docker image with tags:"
+          echo " - $DOCKERHUB_REPO:${{ steps.get_version.outputs.version }}"
+          echo " - $DOCKERHUB_REPO:$DOCKER_IMAGE_TAG"
+
+          docker build \
+            -t $DOCKERHUB_REPO:${{ steps.get_version.outputs.version }} \
+            -t $DOCKERHUB_REPO:$DOCKER_IMAGE_TAG .
+
+      # 5️⃣ Authenticate against DockerHub
+      - name: DockerHub Login
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 6️⃣ Push Docker image (semantic version tag)
+      - name: Push Docker image
+        run: |
+          docker push $DOCKERHUB_REPO:${{ steps.get_version.outputs.version }}
+
+      # 7️⃣ Confirm image upload
+      - name: Confirm pushed Docker image
+        run: |
+          echo "Docker image uploaded successfully:"
+          echo "$DOCKERHUB_REPO:${{ steps.get_version.outputs.version }}"
+
+  # --------------------------------------
+  # 3️⃣ Image Vulnerability Scanning Job
+  # --------------------------------------
+  scan-image-vulnerabilities:
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    runs-on: ubuntu-24.04
+    needs: upload-image
+    timeout-minutes: 15
+
+    steps:
+      # 1️⃣ Checkout repository (required for workspace context)
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2️⃣ Generate dynamic filenames with timestamp
+      # This prevents overwriting artifacts between runs
+      - name: Generate filenames with timestamp
+        id: filenames
+        run: |
+          TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
+          echo "scan_file=trivy-scan-$TIMESTAMP.json" >> $GITHUB_OUTPUT
+          echo "sbom_file=trivy-sbom-$TIMESTAMP.json" >> $GITHUB_OUTPUT
+
+      # 3️⃣ Run Trivy vulnerability scan in JSON format
+      # JSON format is required for parsing results with jq
+      - name: Scan Docker image (JSON vulnerability report)
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
+        with:
+          image-ref: ${{ env.DOCKERHUB_REPO }}:${{ needs.upload-image.outputs.image_version }}
+          format: json
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          output: ${{ steps.filenames.outputs.scan_file }}
+
+      # 4️⃣ Generate SBOM in SPDX-JSON format
+      # This is used for auditing and supply chain tracking
+      - name: Generate SBOM (SPDX JSON)
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
+        with:
+          image-ref: ${{ env.DOCKERHUB_REPO }}:${{ needs.upload-image.outputs.image_version }}
+          format: spdx-json
+          output: ${{ steps.filenames.outputs.sbom_file }}
+
+      # 5️⃣ Upload vulnerability scan report as artifact
+      # This ensures the JSON scan is downloadable even if the job fails later
+      - name: Upload vulnerability scan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.filenames.outputs.scan_file }}
+          path: ${{ steps.filenames.outputs.scan_file }}
+
+      # 6️⃣ Upload SBOM artifact
+      # The SBOM is always stored for compliance and auditing
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.filenames.outputs.sbom_file }}
+          path: ${{ steps.filenames.outputs.sbom_file }}
+
+      # 7️⃣ Evaluate vulnerabilities and fail pipeline if needed
+      # This runs AFTER artifacts are uploaded
+      - name: Fail if HIGH/CRITICAL vulnerabilities are found
+        run: |
+          FILE=${{ steps.filenames.outputs.scan_file }}
+          echo "Checking vulnerabilities inside $FILE..."
+
+          COUNT=$(jq '[.Results[].Vulnerabilities[]? | select(.Severity=="HIGH" or .Severity=="CRITICAL")] | length' "$FILE")
+
+          if [ "$COUNT" -gt 0 ]; then
+            echo "❌ Found $COUNT HIGH/CRITICAL vulnerabilities!"
+            exit 1
+          else
+            echo "✅ No HIGH/CRITICAL vulnerabilities found."
+          fi
+        shell: bash
