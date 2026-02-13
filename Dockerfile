@@ -43,4 +43,4 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 # Run the custom server with graceful shutdown
-CMD ["node", "server.js"]
+CMD ["npm", "run", "start:next"]
