@@ -7,7 +7,10 @@ WORKDIR /app
 
 # Copy package files
 COPY package.json package-lock.json* ./
-RUN npm install --only=production
+
+ENV NODE_ENV=production
+
+RUN npm install
 
 
 # Rebuild the source code only when needed
