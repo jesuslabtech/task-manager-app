@@ -199,7 +199,7 @@ jobs:
       - name: Upload vulnerability scan artifact
         uses: actions/upload-artifact@v4
         with:
-          name: trivy-scan
+          name: ${{ steps.filenames.outputs.scan_file }}
           path: ${{ steps.filenames.outputs.scan_file }}
 
       # 6️⃣ Upload SBOM artifact
@@ -207,7 +207,7 @@ jobs:
       - name: Upload SBOM artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sbom
+          name: ${{ steps.filenames.outputs.sbom_file }}
           path: ${{ steps.filenames.outputs.sbom_file }}
 
       # 7️⃣ Evaluate vulnerabilities and fail pipeline if needed
