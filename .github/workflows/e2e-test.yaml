@@ -3,7 +3,7 @@ name: E2E Tests
 # This workflow is triggered when ci.yml finishes
 on:
   workflow_run:
-    workflows: ['ci']
+    workflows: ['CI Pipeline']
     types:
       - completed
 
