@@ -83,6 +83,7 @@ jobs:
         with:
           target: ${{ env.TARGET_URL }}
           format: html
+          allow_issue_writing: false
           cmd_options: >
             -a
             -m 5
