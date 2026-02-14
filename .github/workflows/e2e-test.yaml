@@ -55,7 +55,7 @@ jobs:
           BASE_URL=${{ secrets.DEV_BASE_URL }} npx playwright test --reporter=list,html
 
       # 6️⃣ Generate dynamic filenames for Playwright report
-      - name: Generate dynamic filenames for Trivy scan
+      - name: Generate dynamic filenames for Playwright report
         id: filenames
         run: |
           TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
@@ -66,4 +66,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.filenames.outputs.playwright-report-folder }}
-          path: ${{ steps.filenames.outputs.playwright-report-folder }}
+          path: playwright-report/
