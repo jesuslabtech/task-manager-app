@@ -10,15 +10,10 @@ const customJestConfig = {
   testEnvironment: 'jest-environment-jsdom',
 
   // 👇 Only execute unit/integration tests
-  testMatch: [
-    '<rootDir>/tests/**/*.test.ts',
-    '<rootDir>/tests/**/*.test.tsx'
-  ],
+  testMatch: ['<rootDir>/tests/**/*.test.ts', '<rootDir>/tests/**/*.test.tsx'],
 
   // Exclude e2e tests from unit/integration test runs
-  testPathIgnorePatterns: [
-    '<rootDir>/tests/e2e/'
-  ],
+  testPathIgnorePatterns: ['<rootDir>/tests/e2e/'],
 
   collectCoverage: true,
   coverageProvider: 'v8',
@@ -32,6 +27,5 @@ const customJestConfig = {
   coverageDirectory: '<rootDir>/coverage',
   coverageReporters: ['lcov', 'text'],
 };
-
 
 module.exports = createJestConfig(customJestConfig);
