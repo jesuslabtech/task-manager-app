@@ -195,7 +195,6 @@ jobs:
     needs: build-scan-push
     timeout-minutes: 10
 
-
     steps:
       # 1️⃣ Checkout GitOps repository on main branch
       - name: Checkout GitOps repository
@@ -204,35 +203,34 @@ jobs:
           repository: jlabtech/task-manager-gitops
           token: ${{ secrets.GITOPS_TOKEN }}
           ref: main
-          path: gitops        # Checkout into a subfolder to avoid confusion with the main repo and to allow separate git config
-  
+          path: gitops # Checkout into a subfolder to avoid confusion with the main repo and to allow separate git config
+
       # 2️⃣ Configure Git identity for commits
       - name: Configure Git user
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-  
+
       # 3️⃣ Update image tag in Kustomize overlay (dev environment)
       - name: 3️⃣ Update image tag in DEV Kustomize overlay
         run: |
           cd gitops/apps/task-manager/overlays/dev
-  
+
           IMAGE_TAG=${{ needs.upload-image.outputs.image_version }}
           echo "Updating Kustomize newTag to: $IMAGE_TAG"
-  
+
           sed -i "s|newTag: .*|newTag: $IMAGE_TAG|g" kustomization.yaml
-  
+
           echo "Updated kustomization.yaml:"
           cat kustomization.yaml
-  
-  
+
       # 4️⃣ Commit changes if there are any
       - name: Commit changes
         run: |
           cd gitops
           git add .
           git diff --cached --quiet || git commit -m "chore(prod): update task-manager image to ${{ needs.upload-image.outputs.image_version }}"
-  
+
       # 5️⃣ Push changes to main
       - name: Push changes
         run: |
