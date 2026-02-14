@@ -200,7 +200,7 @@ jobs:
       - name: Checkout GitOps repository
         uses: actions/checkout@v4
         with:
-          repository: jlabtech/task-manager-gitops
+          repository: jesuslabtech/task-manager-gitops
           token: ${{ secrets.GITOPS_TOKEN }}
           ref: main
           path: gitops # Checkout into a subfolder to avoid confusion with the main repo and to allow separate git config
