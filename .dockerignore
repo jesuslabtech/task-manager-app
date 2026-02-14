@@ -2,8 +2,7 @@
 node_modules
 
 # Next.js build artifacts
-.next/cache
-.next/trace
+.next
 
 # Logs
 npm-debug.log

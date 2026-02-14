@@ -9,9 +9,14 @@ const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'jest-environment-jsdom',
 
-  // Cobertura
-  collectCoverage: true, // Change to false if you don't want coverage
-  coverageProvider: 'v8', // ✅ Avoid babel-plugin-istanbul and test-exclude
+  // 👇 Only execute unit/integration tests
+  testMatch: ['<rootDir>/tests/**/*.test.ts', '<rootDir>/tests/**/*.test.tsx'],
+
+  // Exclude e2e tests from unit/integration test runs
+  testPathIgnorePatterns: ['<rootDir>/tests/e2e/'],
+
+  collectCoverage: true,
+  coverageProvider: 'v8',
   collectCoverageFrom: [
     'lib/**/*.ts',
     '!lib/logger.ts',
@@ -21,9 +26,6 @@ const customJestConfig = {
   ],
   coverageDirectory: '<rootDir>/coverage',
   coverageReporters: ['lcov', 'text'],
-
-  // We do not need complicated transformIgnorePatterns
-  // Jest + next/jest handles this well by default, so we can keep it simple
 };
 
 module.exports = createJestConfig(customJestConfig);
