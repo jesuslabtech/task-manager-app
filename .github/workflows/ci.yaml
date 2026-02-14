@@ -229,7 +229,7 @@ jobs:
         run: |
           cd gitops
           git add .
-          git diff --cached --quiet || git commit -m "chore(prod): update task-manager image to ${{ needs.upload-image.outputs.image_version }}"
+          git diff --cached --quiet || git commit -m "chore: update task-manager image to ${{ needs.upload-image.outputs.image_version }} in dev overlay"
 
       # 5️⃣ Push changes to main
       - name: Push changes
