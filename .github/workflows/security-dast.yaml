@@ -32,7 +32,7 @@ jobs:
       security-events: write
 
     # It only runs if the previous workflow was successful
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    #if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     env:
       TARGET_URL: ${{ secrets.DEV_BASE_URL }}
