@@ -4,12 +4,12 @@ on:
   push:
     branches:
       - develop
-      - main
 
 env:
   APP_NAME: task-manager
   DOCKERHUB_REPO: jlabtech/task-manager
-  DOCKER_IMAGE_TAG: ${{ github.sha }}
+  DOCKER_IMAGE_SHA_TAG: sha-${{ github.sha }} # SHA como tag inmutable
+  DOCKER_IMAGE_VERSION_TAG: ${{ github.sha }} # Se reemplaza con semver en el push
 
 jobs:
   # ------------------------------
@@ -82,7 +82,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   # ------------------------------
-  # 2️⃣ Build, Scan & Push Docker Image (Unique job to ensure artifacts reus, like docker image)
+  # 2️⃣ Build, Scan & Push Docker Image
   # ------------------------------
   build-scan-push:
     runs-on: ubuntu-24.04
@@ -93,7 +93,9 @@ jobs:
       security-events: write
       actions: read
     outputs:
-      image_version: ${{ steps.get_version.outputs.version }}
+      image_sha_tag: ${{ steps.push-image.outputs.sha_tag }}
+      image_version_tag: ${{ steps.push-image.outputs.version_tag }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -102,19 +104,14 @@ jobs:
         id: get_version
         run: |
           VERSION=$(cat RELEASE.md | tr -d ' \n')
-          echo "Detected version: $VERSION"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version_tag=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Build Docker image
         run: |
-          echo "Building Docker image with tags:"
-          echo " - $DOCKERHUB_REPO:${{ steps.get_version.outputs.version }}"
-          echo " - $DOCKERHUB_REPO:$DOCKER_IMAGE_TAG"
-
           docker build \
             --no-cache \
-            -t $DOCKERHUB_REPO:${{ steps.get_version.outputs.version }} \
-            -t $DOCKERHUB_REPO:$DOCKER_IMAGE_TAG .
+            -t $DOCKERHUB_REPO:${{ env.DOCKER_IMAGE_SHA_TAG }} \
+            -t $DOCKERHUB_REPO:${{ steps.get_version.outputs.version_tag }} .
 
       - name: Generate dynamic filenames for Trivy scan
         id: filenames
@@ -126,10 +123,10 @@ jobs:
       - name: Scan Docker image locally (JSON)
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
         with:
-          image-ref: ${{ env.DOCKERHUB_REPO }}:${{ env.DOCKER_IMAGE_TAG }}
+          image-ref: ${{ env.DOCKERHUB_REPO }}:${{ env.DOCKER_IMAGE_SHA_TAG }}
           format: json
           severity: CRITICAL
-          scanners: vuln # Only scan for vulnerabilities, skip secrets in image scan to speed up
+          scanners: vuln
           vuln-type: library
           ignore-unfixed: true
           output: ${{ steps.filenames.outputs.scan_file }}
@@ -138,7 +135,7 @@ jobs:
       - name: Generate SBOM (SPDX JSON)
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
         with:
-          image-ref: ${{ env.DOCKERHUB_REPO }}:${{ env.DOCKER_IMAGE_TAG }}
+          image-ref: ${{ env.DOCKERHUB_REPO }}:${{ env.DOCKER_IMAGE_SHA_TAG }}
           format: spdx-json
           output: ${{ steps.filenames.outputs.sbom_file }}
           cache: false
@@ -174,64 +171,54 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Push Docker image
+        id: push-image
         run: |
-          echo "Pushing Docker image tags:"
-          echo " - $DOCKERHUB_REPO:${{ steps.get_version.outputs.version }}"
-          echo " - $DOCKERHUB_REPO:$DOCKER_IMAGE_TAG"
+          # Push SHA tag (immutable, para promoción real)
+          docker push $DOCKERHUB_REPO:${{ env.DOCKER_IMAGE_SHA_TAG }}
 
-          # First the SHA
-          docker push $DOCKERHUB_REPO:$DOCKER_IMAGE_TAG
-          # Then, the semantic version tag
-          docker tag $DOCKERHUB_REPO:$DOCKER_IMAGE_TAG $DOCKERHUB_REPO:${{ steps.get_version.outputs.version }}
-          docker push $DOCKERHUB_REPO:${{ steps.get_version.outputs.version }}
+          # Push semantic version tag (humano-friendly)
+          docker tag $DOCKERHUB_REPO:${{ env.DOCKER_IMAGE_SHA_TAG }} $DOCKERHUB_REPO:${{ steps.get_version.outputs.version_tag }}
+          docker push $DOCKERHUB_REPO:${{ steps.get_version.outputs.version_tag }}
 
-  # --------------------------------------
-  # 4️⃣ Update GitOps Repository (Production - main for now)
-  # --------------------------------------
-  update-gitops-main:
+          echo "sha_tag=${DOCKERHUB_REPO}:${{ env.DOCKER_IMAGE_SHA_TAG }}" >> $GITHUB_OUTPUT
+          echo "version_tag=${DOCKERHUB_REPO}:${{ steps.get_version.outputs.version_tag }}" >> $GITHUB_OUTPUT
+
+  # ------------------------------
+  # 3️⃣ Update GitOps Overlay Dev
+  # ------------------------------
+  update-gitops-dev:
     permissions:
       contents: write
     runs-on: ubuntu-24.04
     needs: build-scan-push
     timeout-minutes: 10
-
     steps:
-      # 1️⃣ Checkout GitOps repository on main branch
-      - name: Checkout GitOps repository
+      - name: Checkout GitOps repo
         uses: actions/checkout@v4
         with:
           repository: jesuslabtech/task-manager-gitops
           token: ${{ secrets.GITOPS_TOKEN }}
-          ref: main
-          path: gitops # Checkout into a subfolder to avoid confusion with the main repo and to allow separate git config
+          path: gitops
 
-      # 2️⃣ Configure Git identity for commits
-      - name: Configure Git user
+      - name: Configure Git
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
 
-      # 3️⃣ Update image tag in Kustomize overlay (dev environment)
-      - name: Update image tag in DEV Kustomize overlay
+      - name: Update DEV overlay with SHA
         run: |
           cd gitops/apps/task-manager/overlays/dev
-
-          IMAGE_TAG=${{ needs.build-scan-push.outputs.image_version }}
-          echo "Updating Kustomize newTag to: $IMAGE_TAG"
-
-          sed -i "s|newTag: .*|newTag: $IMAGE_TAG|g" kustomization.yaml
-
-          echo "Updated kustomization.yaml:"
+          NEW_SHA=${{ needs.build-scan-push.outputs.image_sha_tag }}
+          echo "Updating newTag to SHA: $NEW_SHA"
+          sed -i "s|newTag: .*|newTag: ${NEW_SHA}|" kustomization.yaml
           cat kustomization.yaml
 
-      # 4️⃣ Commit changes if there are any
-      - name: Commit changes
+      - name: Commit changes if any
         run: |
           cd gitops
-          git add .
-          git diff --cached --quiet || git commit -m "chore: update task-manager image to ${{ needs.upload-image.outputs.image_version }} in dev overlay"
+          git add apps/task-manager/overlays/dev/kustomization.yaml
+          git diff --cached --quiet || git commit -m "chore(dev): update task-manager image to SHA ${{ needs.build-scan-push.outputs.image_sha_tag }}"
 
-      # 5️⃣ Push changes to main
       - name: Push changes
         run: |
           cd gitops
