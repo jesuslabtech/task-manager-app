@@ -1,0 +1,129 @@
+name: security-dast
+
+# ------------------------------------------------------------
+# TRIGGER
+# ------------------------------------------------------------
+# It executes automatically when e2e-tests.yml finishes
+# Only runs if the previous workflow was successful
+# ------------------------------------------------------------
+
+on:
+  #  workflow_run:
+  #    workflows: ['E2E Tests'] # Name of the workflow to listen to (see e2e-test.yaml name property)
+  #    types:
+  #      - completed
+  # For testing purposes, we trigger it in the pull request event, but in production it should be triggered by the completion of the E2E Tests workflow
+  pull_request:
+    branches:
+      - main
+      - develop
+
+# ------------------------------------------------------------
+# JOB
+# ------------------------------------------------------------
+
+jobs:
+  dast:
+    name: OWASP ZAP Baseline Scan (Dev Environment)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+
+    # It only runs if the previous workflow was successful
+    #if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    env:
+      TARGET_URL: ${{ secrets.DEV_BASE_URL }}
+
+    steps:
+      # --------------------------------------------------------
+      # Checkout repository
+      # --------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --------------------------------------------------------
+      # Previous validations should guarantee TARGET_URL is set, but we check again to be sure before launching the scan
+      # --------------------------------------------------------
+      - name: Validate target URL
+        run: |
+          if [ -z "$TARGET_URL" ]; then
+            echo "ERROR: DEV_BASE_URL secret is not configured"
+            exit 1
+          fi
+          echo "Target URL: $TARGET_URL"
+
+      # --------------------------------------------------------
+      # Wait disponibility of the application before launching the scan
+      # --------------------------------------------------------
+      - name: Wait for dev environment readiness
+        run: |
+          echo "Waiting for application to be ready..."
+          for i in {1..30}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" $TARGET_URL/health || true)
+            if [ "$STATUS" = "200" ]; then
+              echo "Application is ready."
+              exit 0
+            fi
+            echo "Attempt $i: Not ready yet..."
+            sleep 10
+          done
+          echo "Application did not become ready in time."
+          exit 1
+
+      # --------------------------------------------------------
+      # Execute OWASP ZAP Baseline Scan
+      # Baseline = not authenticated, fast, ideal for CI
+      # --------------------------------------------------------
+      - name: Run OWASP ZAP Baseline Scan
+        id: zap
+        uses: zaproxy/action-baseline@6c5a007541891231cd9e0ddec25d4f25c59c9874 # v0.15.0
+        with:
+          target: ${{ env.TARGET_URL }}
+          format: html
+          allow_issue_writing: false
+          cmd_options: >
+            -a
+            -m 5
+            -T 60
+
+      # --------------------------------------------------------
+      # Upload HTML report as artifact
+      # --------------------------------------------------------
+      - name: Upload ZAP HTML Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-html-report
+          path: zap-report.html
+
+      # --------------------------------------------------------
+      # Analyze the report to fail if HIGH vulnerabilities are found. This is a simple grep check, but can be enhanced with more sophisticated parsing if needed.
+      # --------------------------------------------------------
+      - name: Fail if HIGH vulnerabilities detected
+        run: |
+          echo "Checking ZAP report for HIGH vulnerabilities..."
+
+          if grep -q "High (Medium)" zap-report.html; then
+            echo "High severity vulnerabilities found."
+            exit 1
+          fi
+
+          if grep -q "High (High)" zap-report.html; then
+            echo "High severity vulnerabilities found."
+            exit 1
+          fi
+
+          echo "No HIGH vulnerabilities detected."
+
+      # --------------------------------------------------------
+      # Convert report to SARIF (optional professional)
+      # Improves visibility in GitHub Security tab
+      # --------------------------------------------------------
+      - name: Upload ZAP SARIF Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-sarif-report
+          path: report_json.json
+          if-no-files-found: ignore
