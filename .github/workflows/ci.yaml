@@ -173,15 +173,14 @@ jobs:
       - name: Push Docker image
         id: push-image
         run: |
-          # Push SHA tag (immutable, para promoción real)
+          # Push SHA tag (immutable, for promotion)
           docker push $DOCKERHUB_REPO:${{ env.DOCKER_IMAGE_SHA_TAG }}
-
-          # Push semantic version tag (humano-friendly)
+          # Push semantic version tag
           docker tag $DOCKERHUB_REPO:${{ env.DOCKER_IMAGE_SHA_TAG }} $DOCKERHUB_REPO:${{ steps.get_version.outputs.version_tag }}
           docker push $DOCKERHUB_REPO:${{ steps.get_version.outputs.version_tag }}
-
-          echo "sha_tag=${DOCKERHUB_REPO}:${{ env.DOCKER_IMAGE_SHA_TAG }}" >> $GITHUB_OUTPUT
-          echo "version_tag=${DOCKERHUB_REPO}:${{ steps.get_version.outputs.version_tag }}" >> $GITHUB_OUTPUT
+          # Output only the SHA for newTag
+          echo "sha_tag=${{ env.DOCKER_IMAGE_SHA_TAG }}" >> $GITHUB_OUTPUT
+          echo "version_tag=${{ steps.get_version.outputs.version_tag }}" >> $GITHUB_OUTPUT
 
   # ------------------------------
   # 3️⃣ Update GitOps Overlay Dev
