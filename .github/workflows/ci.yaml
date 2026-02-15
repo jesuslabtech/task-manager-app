@@ -8,7 +8,7 @@ on:
 env:
   APP_NAME: task-manager
   DOCKERHUB_REPO: jlabtech/task-manager
-  DOCKER_IMAGE_SHA_TAG: sha-${{ github.sha }} # SHA como tag inmutable
+  DOCKER_IMAGE_SHA_TAG: ${{ github.sha }} # SHA como tag inmutable
   DOCKER_IMAGE_VERSION_TAG: ${{ github.sha }} # Se reemplaza con semver en el push
 
 jobs:
