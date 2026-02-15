@@ -8,15 +8,15 @@ name: security-dast
 # ------------------------------------------------------------
 
 on:
-  #  workflow_run:
-  #    workflows: ['E2E Tests'] # Name of the workflow to listen to (see e2e-test.yaml name property)
-  #    types:
-  #      - completed
+  workflow_run:
+    workflows: ['E2E Tests'] # Name of the workflow to listen to (see e2e-test.yaml name property)
+    types:
+      - completed
   # For testing purposes, we trigger it in the pull request event, but in production it should be triggered by the completion of the E2E Tests workflow
-  pull_request:
-    branches:
-      - main
-      - develop
+  #pull_request:
+  #  branches:
+  #    - main
+  #    - develop
 
 # ------------------------------------------------------------
 # JOB
