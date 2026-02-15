@@ -37,8 +37,8 @@ jobs:
       # ------------------------------
       - name: Configure Git user
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions@users.noreply.github.com"
 
       # ------------------------------
       # 3️⃣ Read SHA of the validated image from DEV overlay
