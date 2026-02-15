@@ -2,6 +2,8 @@
 
 A production-ready fullstack task management application built with Next.js, featuring comprehensive operational endpoints for Kubernetes deployment.
 
+See the gitops repository of this application: https://github.com/jesuslabtech/task-manager-gitops
+
 ## Features
 
 ### Application Features
